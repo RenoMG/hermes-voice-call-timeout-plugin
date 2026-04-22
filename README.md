@@ -27,31 +27,18 @@ It patches `gateway.platforms.discord.DiscordAdapter` at startup so the adapter 
 
 ## Install
 
-### Option 1: clone from GitHub (public)
+### Clone from GitHub
 
 ```bash
 cd ~/.hermes/plugins
 git clone https://github.com/RenoMG/hermes-voice-call-timeout-plugin.git voice-call-timeout
 ```
 
-### Option 2: clone from Gitea (local mirror)
-
-```bash
-cd ~/.hermes/plugins
-git clone http://192.168.50.24:3000/Rikka/hermes-voice-call-timeout-plugin.git voice-call-timeout
-```
-
-### Option 3: copy the plugin directory manually
-
-Copy this repository's contents into:
-
-```text
-~/.hermes/plugins/voice-call-timeout/
-```
-
-The directory must contain `plugin.yaml` and `__init__.py` at its root.
-
 ### Enable the plugin
+
+Enable with ```hermes plugins``` and select voice-call-timeout
+
+OR
 
 Add to your Hermes config:
 
@@ -80,8 +67,3 @@ Run tests with:
 ```bash
 python -m unittest tests/test_voice_call_timeout_plugin.py
 ```
-
-## Repos
-
-- **GitHub (public):** https://github.com/RenoMG/hermes-voice-call-timeout-plugin
-- **Gitea (local mirror):** http://192.168.50.24:3000/Rikka/hermes-voice-call-timeout-plugin
