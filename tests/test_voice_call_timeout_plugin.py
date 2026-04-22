@@ -1,8 +1,17 @@
+import sys
 from pathlib import Path
 import unittest
 
-from voice_call_timeout_plugin import plugin
-from voice_call_timeout_plugin.settings import TimeoutSettingsStore, format_timeout, parse_timeout_spec
+# Add plugin directory to path so we can import __init__ as a flat module
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+# Import from the flat __init__ module
+import __init__ as voice_timeout
+from __init__ import (
+    TimeoutSettingsStore,
+    format_timeout,
+    parse_timeout_spec,
+)
 
 
 class VoiceCallTimeoutPluginTests(unittest.TestCase):
@@ -46,12 +55,12 @@ class VoiceCallTimeoutPluginTests(unittest.TestCase):
                 self.resets.append(guild_id)
 
         adapter = FakeAdapter()
-        original = plugin._LIVE_ADAPTERS
+        original = voice_timeout._LIVE_ADAPTERS
         try:
-            plugin._LIVE_ADAPTERS = {adapter}
-            plugin.apply_timeout_to_live_adapters(1800)
+            voice_timeout._LIVE_ADAPTERS = {adapter}
+            voice_timeout.apply_timeout_to_live_adapters(1800)
         finally:
-            plugin._LIVE_ADAPTERS = original
+            voice_timeout._LIVE_ADAPTERS = original
 
         self.assertEqual(adapter.VOICE_TIMEOUT, 1800)
         self.assertEqual(adapter.resets, [111, 222])
