@@ -8,10 +8,11 @@ Hermes core currently defines this in the Discord adapter as a class-level timeo
 
 ## How it works
 
-At plugin registration time, the plugin patches `DiscordPlatformAdapter` in two places:
+At plugin registration time, the plugin patches `DiscordAdapter` (with fallback to `DiscordPlatformAdapter` for older builds) in three places:
 
 1. `__init__` — applies the saved timeout to each adapter instance and tracks live adapters.
 2. `_reset_voice_timeout` — cancels the old inactivity task and recreates it using the saved timeout value, or skips recreation if the timeout is disabled.
+3. `_voice_timeout_handler` — replaces the core timeout handler so that when disabled, the task simply doesn't schedule a disconnect (instead of sleeping 0 seconds and immediately leaving).
 
 Because the adapter's timer is reset whenever voice activity or playback happens, changing the timeout here affects the real auto-leave behavior without needing to fork Hermes itself.
 
@@ -36,6 +37,44 @@ Because this is a clean user-land extension:
 - `plugin.yaml` — Hermes plugin manifest
 - `__init__.py` — single-file plugin: entry point, settings, command handling, Discord adapter patching (flat structure required by Hermes plugin loader)
 - `tests/test_voice_call_timeout_plugin.py` — regression tests for parsing, persistence, and live adapter updates
+
+## Install
+
+### Option 1: clone from GitHub (public)
+
+```bash
+cd ~/.hermes/plugins
+git clone https://github.com/RenoMG/hermes-voice-call-timeout-plugin.git voice-call-timeout
+```
+
+### Option 2: clone from Gitea (local mirror)
+
+```bash
+cd ~/.hermes/plugins
+git clone http://192.168.50.24:3000/Rikka/hermes-voice-call-timeout-plugin.git voice-call-timeout
+```
+
+### Option 3: copy the plugin directory manually
+
+Copy this repository's contents into:
+
+```text
+~/.hermes/plugins/voice-call-timeout/
+```
+
+The directory must contain `plugin.yaml` and `__init__.py` at its root.
+
+### Enable the plugin
+
+Add to your Hermes config:
+
+```yaml
+plugins:
+  enabled:
+    - voice-call-timeout
+```
+
+Restart Hermes or the gateway after enabling it.
 
 ## Limitations
 
