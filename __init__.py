@@ -108,9 +108,18 @@ def get_current_timeout_seconds() -> Optional[int]:
 def apply_timeout_to_live_adapters(timeout_seconds: Optional[int]) -> None:
     for adapter in list(_LIVE_ADAPTERS):
         try:
-            adapter.VOICE_TIMEOUT = 0 if timeout_seconds is None else int(timeout_seconds)
-            for guild_id in list(getattr(adapter, "_voice_clients", {}).keys()):
-                adapter._reset_voice_timeout(guild_id)
+            if timeout_seconds is None:
+                # Disable: cancel all existing timeout tasks immediately
+                adapter.VOICE_TIMEOUT = 0
+                for guild_id in list(getattr(adapter, "_voice_timeout_tasks", {}).keys()):
+                    task = adapter._voice_timeout_tasks.pop(guild_id, None)
+                    if task:
+                        task.cancel()
+            else:
+                adapter.VOICE_TIMEOUT = int(timeout_seconds)
+                # Reset timers so they pick up the new value
+                for guild_id in list(getattr(adapter, "_voice_clients", {}).keys()):
+                    adapter._reset_voice_timeout(guild_id)
         except Exception as exc:
             logger.debug("Failed applying timeout to live adapter: %s", exc)
 
@@ -174,19 +183,39 @@ def patch_discord_adapter() -> None:
             pass
 
     def patched_reset_voice_timeout(self, guild_id: int) -> None:
+        """Cancel any existing timer; start a new one only if timeout is enabled."""
         task = self._voice_timeout_tasks.pop(guild_id, None)
         if task:
             task.cancel()
         timeout_seconds = get_current_timeout_seconds()
-        self.VOICE_TIMEOUT = 0 if timeout_seconds is None else int(timeout_seconds)
-        if timeout_seconds is None or timeout_seconds <= 0:
+        # When disabled (None), set VOICE_TIMEOUT to a sentinel that the
+        # patched handler recognises, but do NOT schedule a new task.
+        if timeout_seconds is None:
+            self.VOICE_TIMEOUT = 0
+            return
+        self.VOICE_TIMEOUT = int(timeout_seconds)
+        if timeout_seconds <= 0:
             return
         self._voice_timeout_tasks[guild_id] = asyncio.ensure_future(
             self._voice_timeout_handler(guild_id)
         )
 
+    original_voice_timeout_handler = DiscordPlatformAdapter._voice_timeout_handler
+
+    async def patched_voice_timeout_handler(self, guild_id: int) -> None:
+        """Auto-disconnect after the configured timeout — or do nothing if disabled."""
+        timeout_seconds = get_current_timeout_seconds()
+        if timeout_seconds is None or timeout_seconds <= 0:
+            # Timeout is disabled — cancel any stale task and stay connected.
+            self._voice_timeout_tasks.pop(guild_id, None)
+            return
+        self.VOICE_TIMEOUT = int(timeout_seconds)
+        # Delegate to the original handler which does the actual sleep + leave.
+        return await original_voice_timeout_handler(self, guild_id)
+
     DiscordPlatformAdapter.__init__ = patched_init
     DiscordPlatformAdapter._reset_voice_timeout = patched_reset_voice_timeout
+    DiscordPlatformAdapter._voice_timeout_handler = patched_voice_timeout_handler
     _PATCHED = True
     logger.info("Patched Discord voice timeout handling for %s", PLUGIN_NAME)
 

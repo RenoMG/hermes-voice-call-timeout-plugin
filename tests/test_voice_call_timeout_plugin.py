@@ -44,11 +44,49 @@ class VoiceCallTimeoutPluginTests(unittest.TestCase):
         self.assertEqual(format_timeout(5400), "1h 30m")
         self.assertEqual(format_timeout(None), "disabled")
 
-    def test_apply_timeout_to_live_adapters_updates_and_resets(self):
+    def test_apply_timeout_to_live_adapters_cancels_tasks_when_disabled(self):
+        """When disabling (None), existing timeout tasks must be cancelled."""
+        class FakeTask:
+            def __init__(self):
+                self.cancelled = False
+            def cancel(self):
+                self.cancelled = True
+
+        class FakeAdapter:
+            def __init__(self):
+                self.VOICE_TIMEOUT = 300
+                self._voice_clients = {111: object()}
+                self._voice_timeout_tasks = {111: FakeTask()}
+                self.resets = []
+
+            def _reset_voice_timeout(self, guild_id):
+                self.resets.append(guild_id)
+
+        adapter = FakeAdapter()
+        task = adapter._voice_timeout_tasks[111]
+        original = voice_timeout._LIVE_ADAPTERS
+        try:
+            voice_timeout._LIVE_ADAPTERS = {adapter}
+            # Disabling should cancel tasks, NOT call _reset_voice_timeout
+            voice_timeout.apply_timeout_to_live_adapters(None)
+        finally:
+            voice_timeout._LIVE_ADAPTERS = original
+
+        self.assertEqual(adapter.VOICE_TIMEOUT, 0)
+        # Task was cancelled
+        self.assertTrue(task.cancelled)
+        # Task was removed from the dict
+        self.assertNotIn(111, adapter._voice_timeout_tasks)
+        # _reset_voice_timeout should NOT have been called when disabling
+        self.assertEqual(adapter.resets, [])
+
+    def test_apply_timeout_to_live_adapters_resets_when_enabled(self):
+        """When changing to a new timeout value, timers should be reset."""
         class FakeAdapter:
             def __init__(self):
                 self.VOICE_TIMEOUT = 300
                 self._voice_clients = {111: object(), 222: object()}
+                self._voice_timeout_tasks = {}
                 self.resets = []
 
             def _reset_voice_timeout(self, guild_id):
