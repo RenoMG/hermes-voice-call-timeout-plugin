@@ -34,9 +34,7 @@ Because this is a clean user-land extension:
 ## Files
 
 - `plugin.yaml` — Hermes plugin manifest
-- `__init__.py` — Hermes entry point
-- `voice_call_timeout_plugin/settings.py` — parsing, formatting, persistence
-- `voice_call_timeout_plugin/plugin.py` — command handling and Discord adapter patching
+- `__init__.py` — single-file plugin: entry point, settings, command handling, Discord adapter patching (flat structure required by Hermes plugin loader)
 - `tests/test_voice_call_timeout_plugin.py` — regression tests for parsing, persistence, and live adapter updates
 
 ## Limitations
