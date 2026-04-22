@@ -166,12 +166,17 @@ def patch_discord_adapter() -> None:
     if _PATCHED:
         return
     try:
-        from gateway.platforms.discord import DiscordPlatformAdapter
-    except Exception as exc:
-        logger.debug("Discord adapter not available yet for %s: %s", PLUGIN_NAME, exc)
-        return
+        # Current Hermes uses DiscordAdapter. Older iterations used
+        # DiscordPlatformAdapter in discussion/docs, so keep a fallback.
+        from gateway.platforms.discord import DiscordAdapter as _DiscordAdapter
+    except Exception:
+        try:
+            from gateway.platforms.discord import DiscordPlatformAdapter as _DiscordAdapter
+        except Exception as exc:
+            logger.debug("Discord adapter not available yet for %s: %s", PLUGIN_NAME, exc)
+            return
 
-    original_init = DiscordPlatformAdapter.__init__
+    original_init = _DiscordAdapter.__init__
 
     def patched_init(self, *args, **kwargs):
         original_init(self, *args, **kwargs)
@@ -200,7 +205,7 @@ def patch_discord_adapter() -> None:
             self._voice_timeout_handler(guild_id)
         )
 
-    original_voice_timeout_handler = DiscordPlatformAdapter._voice_timeout_handler
+    original_voice_timeout_handler = _DiscordAdapter._voice_timeout_handler
 
     async def patched_voice_timeout_handler(self, guild_id: int) -> None:
         """Auto-disconnect after the configured timeout — or do nothing if disabled."""
@@ -213,11 +218,11 @@ def patch_discord_adapter() -> None:
         # Delegate to the original handler which does the actual sleep + leave.
         return await original_voice_timeout_handler(self, guild_id)
 
-    DiscordPlatformAdapter.__init__ = patched_init
-    DiscordPlatformAdapter._reset_voice_timeout = patched_reset_voice_timeout
-    DiscordPlatformAdapter._voice_timeout_handler = patched_voice_timeout_handler
+    _DiscordAdapter.__init__ = patched_init
+    _DiscordAdapter._reset_voice_timeout = patched_reset_voice_timeout
+    _DiscordAdapter._voice_timeout_handler = patched_voice_timeout_handler
     _PATCHED = True
-    logger.info("Patched Discord voice timeout handling for %s", PLUGIN_NAME)
+    logger.info("Patched Discord voice timeout handling for %s on %s", PLUGIN_NAME, _DiscordAdapter.__name__)
 
 
 # ---------------------------------------------------------------------------
