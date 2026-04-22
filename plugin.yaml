@@ -1,0 +1,4 @@
+name: voice-call-timeout
+version: 1.0.0
+description: "Configurable Discord voice-call inactivity timeout for Hermes Agent."
+author: "Rikka"
