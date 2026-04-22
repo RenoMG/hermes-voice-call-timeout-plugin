@@ -40,21 +40,14 @@ Because this is a clean user-land extension:
 
 ## Install
 
-### Option 1: clone from GitHub (public)
+### clone from GitHub
 
 ```bash
 cd ~/.hermes/plugins
 git clone https://github.com/RenoMG/hermes-voice-call-timeout-plugin.git voice-call-timeout
 ```
 
-### Option 2: clone from Gitea (local mirror)
-
-```bash
-cd ~/.hermes/plugins
-git clone http://192.168.50.24:3000/Rikka/hermes-voice-call-timeout-plugin.git voice-call-timeout
-```
-
-### Option 3: copy the plugin directory manually
+### Option 2: copy the plugin directory manually
 
 Copy this repository's contents into:
 
@@ -74,10 +67,10 @@ plugins:
     - voice-call-timeout
 ```
 
+or enable with ```hermes plugins``` and select voice-call-timeout
+
 Restart Hermes or the gateway after enabling it.
 
 ## Limitations
 
 This version sets a global timeout for Discord voice calls handled by the running Hermes profile. It does not currently store separate timeout values per server, per channel, or per user.
-
-That said… for the actual problem you described, this gets the job done nicely ★
