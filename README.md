@@ -6,7 +6,13 @@ A Hermes Agent plugin that lets you choose how long Hermes stays in a Discord vo
 
 Hermes already has a hard-coded Discord voice inactivity timeout in the Discord platform adapter. This plugin makes that timeout configurable without editing Hermes core.
 
-It patches `gateway.platforms.discord.DiscordAdapter` at startup so the adapter reads a persisted timeout value instead of relying on the built-in `VOICE_TIMEOUT = 300` default.
+It patches three methods on `DiscordAdapter` (`discord.DiscordAdapter` in current Hermes, with fallback to `DiscordPlatformAdapter` on older builds) at startup:
+
+- **`__init__`** — applies the saved timeout to each adapter instance and tracks live adapters
+- **`_reset_voice_timeout`** — cancels the old inactivity task and recreates it using the saved timeout; skips recreation if timeout is disabled
+- **`_voice_timeout_handler`** — replaces the core timeout handler so that when disabled, the task simply doesn't schedule a disconnect (instead of sleeping 0 seconds and immediately leaving)
+
+Because the adapter's timer is reset whenever voice activity or playback happens, changing the timeout here affects the real auto-leave behavior without needing to fork Hermes itself.
 
 ## Features
 
