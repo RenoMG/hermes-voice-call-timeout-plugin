@@ -1,5 +1,28 @@
 # Hermes Voice Call Timeout Plugin
 
+> [!WARNING]
+> This repository is archived. I'm no longer maintaining or developing it.
+
+> [!NOTE]
+> Hermes Agent now has this built in. Set `discord.voice_channel_inactivity_timeout_seconds` in your Hermes `config.yaml` (`0` = never leave). It landed in [NousResearch/hermes-agent#73517](https://github.com/NousResearch/hermes-agent/pull/73517) (merged July 2026).
+>
+> The plugin was delisted from the Hermes plugin catalog because it patches Discord adapter internals, which the new catalog guideline (rule 9) no longer allows. See the discussion in [issue #1](https://github.com/RenoMG/hermes-voice-call-timeout-plugin/issues/1).
+>
+> On current Hermes, this plugin's custom durations are no longer honored. Use the built-in setting instead.
+
+**To switch over:**
+
+1. Remove `voice-call-timeout` from `plugins.enabled`.
+2. Add the snippet below to your Hermes `config.yaml`.
+3. Restart the gateway.
+
+```yaml
+discord:
+  voice_channel_inactivity_timeout_seconds: 1200  # 0 = never
+```
+
+## Original documentation (archived)
+
 A Hermes Agent plugin that lets you choose how long Hermes stays in a Discord voice call before leaving for inactivity.
 
 ## What it does
